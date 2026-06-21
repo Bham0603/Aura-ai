@@ -1,4 +1,4 @@
-import { app, BrowserWindow } from 'electron'
+import { app, BrowserWindow, desktopCapturer, session } from 'electron'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 
@@ -72,4 +72,16 @@ app.on('activate', () => {
 
 app.commandLine.appendSwitch('enable-transparent-visuals')
 
-app.whenReady().then(createWindow)
+app.whenReady().then(() => {
+  // Handle display media requests for audio/video capture
+  session.defaultSession.setDisplayMediaRequestHandler((_request, callback) => {
+    desktopCapturer.getSources({ types: ['screen'] }).then((sources) => {
+      // Grant access to the first screen found with loopback audio to capture system audio
+      callback({ video: sources[0], audio: 'loopback' })
+    }).catch(err => {
+      console.error('Error getting sources:', err)
+    })
+  })
+  
+  createWindow()
+})
